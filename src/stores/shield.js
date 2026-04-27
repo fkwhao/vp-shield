@@ -6,6 +6,10 @@ export const useShieldStore = defineStore('shield', () => {
   const backendProcessRunning = ref(false)
   const isUnderAttack = ref(false)
 
+  // 紧急防御状态
+  const emergencyMode = ref(false)
+  const emergencyReason = ref('')
+
   const trafficData = ref([])
   const maxDataPoints = 60
 
@@ -308,22 +312,142 @@ export const useShieldStore = defineStore('shield', () => {
         break
       case 'alert':
         isUnderAttack.value = true
-        showAlert({
-          title: '检测到攻击告警',
-          message: payload.message || payload.description || '检测到异常流量',
-          alertType: 'danger',
-          details: {
-            威胁类型: payload.alertType || payload.threatType || '未知',
-            来源IP: payload.sourceIp || payload.sourceIps?.join(', ') || '未知',
-            攻击源数量: payload.sourceIps?.length || 1,
-            严重程度: payload.severity || '高'
-          }
-        })
+        // 检查是否是紧急防御告警
+        if (payload.title?.includes('紧急防御') || payload.sourceIp === 'emergency') {
+          emergencyMode.value = true
+          emergencyReason.value = payload.description || payload.message || ''
+          showAlert({
+            title: '紧急防御模式',
+            message: payload.description || payload.message || '系统已进入紧急防御模式',
+            alertType: 'danger',
+            details: {
+              触发原因: emergencyReason.value,
+              状态: '已激活'
+            }
+          })
+        } else if (payload.title?.includes('退出紧急防御') || payload.sourceIp === 'system') {
+          emergencyMode.value = false
+          emergencyReason.value = ''
+          addLog({
+            level: 'success',
+            source: 'DEFENSE',
+            message: payload.description || '已退出紧急防御模式'
+          })
+        } else {
+          showAlert({
+            title: '检测到攻击告警',
+            message: payload.message || payload.description || '检测到异常流量',
+            alertType: 'danger',
+            details: {
+              威胁类型: payload.alertType || payload.threatType || '未知',
+              来源IP: payload.sourceIp || payload.sourceIps?.join(', ') || '未知',
+              攻击源数量: payload.sourceIps?.length || 1,
+              严重程度: payload.severity || '高'
+            }
+          })
+        }
         break
       default:
         if (!data.type) {
           addTrafficData(payload)
         }
+    }
+  }
+
+  // 紧急防御 API
+  const fetchEmergencyStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/emergency/status')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data) {
+          emergencyMode.value = result.data.emergencyModeActive || false
+          emergencyReason.value = result.data.emergencyReason || ''
+        }
+      }
+    } catch (e) {
+      console.error('获取紧急防御状态失败:', e)
+    }
+  }
+
+  const triggerEmergency = async (mode = 'established-only') => {
+    try {
+      addLog({
+        level: 'info',
+        source: 'DEFENSE',
+        message: `正在触发紧急防御模式...`
+      })
+      const response = await fetch('http://localhost:8080/api/v1/emergency/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      })
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          emergencyMode.value = true
+          addLog({
+            level: 'warning',
+            source: 'DEFENSE',
+            message: `紧急防御已激活: ${mode}`
+          })
+        } else {
+          addLog({
+            level: 'danger',
+            source: 'DEFENSE',
+            message: `触发失败: ${result.message || '未知错误'}`
+          })
+        }
+        return result
+      } else {
+        addLog({
+          level: 'danger',
+          source: 'DEFENSE',
+          message: `请求失败: HTTP ${response.status}`
+        })
+        return { success: false }
+      }
+    } catch (e) {
+      addLog({
+        level: 'danger',
+        source: 'DEFENSE',
+        message: `触发紧急防御失败: ${e.message}`
+      })
+      return { success: false }
+    }
+  }
+
+  const recoverFromEmergency = async () => {
+    try {
+      addLog({
+        level: 'info',
+        source: 'DEFENSE',
+        message: '正在退出紧急防御模式...'
+      })
+      const response = await fetch('http://localhost:8080/api/v1/emergency/recover', {
+        method: 'POST'
+      })
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          emergencyMode.value = false
+          emergencyReason.value = ''
+          addLog({
+            level: 'success',
+            source: 'DEFENSE',
+            message: '已退出紧急防御模式'
+          })
+        }
+        return result
+      }
+      return { success: false }
+    } catch (e) {
+      addLog({
+        level: 'danger',
+        source: 'DEFENSE',
+        message: `退出紧急防御失败: ${e.message}`
+      })
+      return { success: false }
     }
   }
 
@@ -392,6 +516,8 @@ export const useShieldStore = defineStore('shield', () => {
     backendProcessRunning,
     backendHealth,
     isUnderAttack,
+    emergencyMode,
+    emergencyReason,
     trafficData,
     stats,
     logs,
@@ -411,6 +537,9 @@ export const useShieldStore = defineStore('shield', () => {
     stopBackend,
     checkBackendHealth,
     startHealthCheck,
-    stopHealthCheck
+    stopHealthCheck,
+    fetchEmergencyStatus,
+    triggerEmergency,
+    recoverFromEmergency
   }
 })

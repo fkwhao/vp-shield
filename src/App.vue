@@ -12,11 +12,15 @@
           :backend-status="sidebarStatus.backend"
           :ws-status="sidebarStatus.ws"
           :defense-status="sidebarStatus.defense"
+          :emergency-mode="store.emergencyMode"
+          :emergency-reason="store.emergencyReason"
           :stats="sidebarStats"
           @start-backend="handleStartBackend"
           @stop-backend="handleStopBackend"
           @export-logs="handleExportLogs"
           @open-settings="handleOpenSettings"
+          @trigger-emergency="handleTriggerEmergency"
+          @recover-emergency="handleRecoverEmergency"
         />
 
         <div class="main-content">
@@ -65,6 +69,13 @@
       <div v-if="store.isUnderAttack" class="attack-indicator">
         <span class="dot"></span>
         <span>检测到异常流量</span>
+      </div>
+    </Transition>
+
+    <Transition name="emergency-indicator">
+      <div v-if="store.emergencyMode" class="emergency-indicator">
+        <span class="emergency-dot"></span>
+        <span>紧急防御模式已激活</span>
       </div>
     </Transition>
   </div>
@@ -186,6 +197,28 @@ const handleSettingsSaved = () => {
     source: 'SYSTEM',
     message: '配置已保存'
   })
+}
+
+const handleTriggerEmergency = async () => {
+  const result = await store.triggerEmergency('established-only')
+  if (!result.success) {
+    store.addLog({
+      level: 'danger',
+      source: 'DEFENSE',
+      message: '触发紧急防御失败'
+    })
+  }
+}
+
+const handleRecoverEmergency = async () => {
+  const result = await store.recoverFromEmergency()
+  if (!result.success) {
+    store.addLog({
+      level: 'danger',
+      source: 'DEFENSE',
+      message: '退出紧急防御失败'
+    })
+  }
 }
 
 onMounted(() => {
@@ -358,6 +391,50 @@ onUnmounted(() => {
 
 .attack-indicator-enter-from,
 .attack-indicator-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+}
+
+.emergency-indicator {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.2);
+}
+
+.emergency-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #f59e0b;
+  animation: pulse-emergency 1s infinite ease-in-out;
+}
+
+@keyframes pulse-emergency {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+.emergency-indicator-enter-active,
+.emergency-indicator-leave-active {
+  transition: all 0.25s ease;
+}
+
+.emergency-indicator-enter-from,
+.emergency-indicator-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(-10px);
 }

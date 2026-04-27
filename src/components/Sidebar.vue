@@ -28,6 +28,15 @@
           <span class="status-indicator" :class="defenseStatus"></span>
           <span>防护引擎</span>
         </div>
+        <div class="status-item" v-if="emergencyMode">
+          <span class="status-indicator emergency"></span>
+          <span class="emergency-text">紧急防御</span>
+        </div>
+      </div>
+      <div v-if="emergencyMode" class="emergency-banner">
+        <div class="emergency-title">紧急防御已激活</div>
+        <div class="emergency-reason">{{ emergencyReason || '系统正在防护中' }}</div>
+        <button class="recover-btn" @click="$emit('recoverEmergency')">恢复正常</button>
       </div>
     </section>
 
@@ -62,6 +71,9 @@
         <button class="soft-button danger" @click="$emit('stopBackend')" :disabled="backendStatus !== 'online'">
           {{ isElectron ? '停止服务' : '断开连接' }}
         </button>
+        <button class="soft-button warning" @click="$emit('triggerEmergency')" :disabled="backendStatus !== 'online' || emergencyMode">
+          紧急防御
+        </button>
         <button class="soft-button" @click="$emit('exportLogs')">导出日志</button>
         <button class="soft-button" @click="$emit('openSettings')">系统设置</button>
       </div>
@@ -77,10 +89,12 @@
 <script setup>
 import { computed } from 'vue'
 
-defineProps({
+const props = defineProps({
   backendStatus: { type: String, default: 'offline' },
   wsStatus: { type: String, default: 'offline' },
   defenseStatus: { type: String, default: 'offline' },
+  emergencyMode: { type: Boolean, default: false },
+  emergencyReason: { type: String, default: '' },
   stats: {
     type: Object,
     default: () => ({
@@ -92,7 +106,7 @@ defineProps({
   }
 })
 
-defineEmits(['startBackend', 'stopBackend', 'exportLogs', 'openSettings'])
+defineEmits(['startBackend', 'stopBackend', 'exportLogs', 'openSettings', 'triggerEmergency', 'recoverEmergency'])
 
 const isElectron = computed(() => Boolean(window.electronAPI))
 
@@ -212,6 +226,73 @@ const formatDuration = (seconds) => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.status-indicator.emergency {
+  background: #f59e0b;
+  animation: pulse 1s infinite;
+}
+
+.emergency-text {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.emergency-banner {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.emergency-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.emergency-reason {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.recover-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.recover-btn:hover {
+  background: rgba(245, 158, 11, 0.3);
+}
+
+.soft-button.warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.soft-button.warning:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+.soft-button.warning:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .sidebar-footer {

@@ -61,6 +61,54 @@
               </div>
             </section>
 
+            <section class="config-section emergency-section">
+              <div class="section-title">
+                <span>紧急防御配置</span>
+                <span class="section-badge">推荐开启</span>
+              </div>
+              <div class="config-grid">
+                <div class="config-tip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
+                    <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                    <path d="M12 16v-4M12 8h.01" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <span>当检测到大量不同源IP攻击或极高流量时，自动切换过滤器阻断攻击流量</span>
+                </div>
+                <label class="config-item">
+                  <span class="label">启用紧急防御</span>
+                  <input type="checkbox" v-model="config.defense.emergencyDefense" class="soft-toggle" />
+                </label>
+                <label class="config-item">
+                  <div class="label-with-tip">
+                    <span class="label">源IP数量阈值</span>
+                    <span class="inline-tip">超过此数量的不同源IP将触发紧急防御</span>
+                  </div>
+                  <input type="number" v-model.number="config.defense.emergencySourceIpThreshold" class="soft-input" min="5" max="500" />
+                </label>
+                <label class="config-item">
+                  <div class="label-with-tip">
+                    <span class="label">PPS 阈值</span>
+                    <span class="inline-tip">超过此PPS将触发紧急防御</span>
+                  </div>
+                  <input type="number" v-model.number="config.defense.emergencyPpsThreshold" class="soft-input" min="1000" max="500000" />
+                </label>
+                <label class="config-item">
+                  <div class="label-with-tip">
+                    <span class="label">自动恢复时间 (秒)</span>
+                    <span class="inline-tip">紧急防御后自动恢复的时间，0表示不自动恢复</span>
+                  </div>
+                  <input type="number" v-model.number="config.defense.emergencyRecoverySeconds" class="soft-input" min="0" max="600" />
+                </label>
+                <label class="config-item">
+                  <div class="label-with-tip">
+                    <span class="label">停止抓包</span>
+                    <span class="inline-tip">紧急防御时完全停止接收流量（极端情况）</span>
+                  </div>
+                  <input type="checkbox" v-model="config.defense.emergencyStopCapture" class="soft-toggle" />
+                </label>
+              </div>
+            </section>
+
             <section class="config-section">
               <div class="section-title">攻击模拟配置</div>
               <div class="config-grid">
@@ -114,7 +162,12 @@ const defaultConfig = {
     autoBlock: false,
     blockDurationMinutes: 60,
     rateLimit: true,
-    rateLimitRecoverySeconds: 60
+    rateLimitRecoverySeconds: 60,
+    emergencyDefense: true,
+    emergencySourceIpThreshold: 50,
+    emergencyPpsThreshold: 10000,
+    emergencyRecoverySeconds: 120,
+    emergencyStopCapture: false
   },
   attack: {
     defaultPacketCount: 100,
@@ -142,7 +195,12 @@ const loadConfig = async () => {
           autoBlock: result.data.defense?.autoBlock ?? defaultConfig.defense.autoBlock,
           blockDurationMinutes: result.data.defense?.blockDurationMinutes ?? defaultConfig.defense.blockDurationMinutes,
           rateLimit: result.data.defense?.rateLimit ?? defaultConfig.defense.rateLimit,
-          rateLimitRecoverySeconds: result.data.defense?.rateLimitRecoverySeconds ?? defaultConfig.defense.rateLimitRecoverySeconds
+          rateLimitRecoverySeconds: result.data.defense?.rateLimitRecoverySeconds ?? defaultConfig.defense.rateLimitRecoverySeconds,
+          emergencyDefense: result.data.defense?.emergencyDefense ?? defaultConfig.defense.emergencyDefense,
+          emergencySourceIpThreshold: result.data.defense?.emergencySourceIpThreshold ?? defaultConfig.defense.emergencySourceIpThreshold,
+          emergencyPpsThreshold: result.data.defense?.emergencyPpsThreshold ?? defaultConfig.defense.emergencyPpsThreshold,
+          emergencyRecoverySeconds: result.data.defense?.emergencyRecoverySeconds ?? defaultConfig.defense.emergencyRecoverySeconds,
+          emergencyStopCapture: result.data.defense?.emergencyStopCapture ?? defaultConfig.defense.emergencyStopCapture
         },
         attack: {
           defaultPacketCount: result.data.attack?.defaultPacketCount ?? defaultConfig.attack.defaultPacketCount,
@@ -409,6 +467,51 @@ watch(() => props.visible, (newVal) => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.section-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.emergency-section .section-title {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.config-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(96, 165, 250, 0.08);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.config-tip svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #60a5fa;
+}
+
+.label-with-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inline-tip {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 400;
 }
 
 /* Modal animation */
