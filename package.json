@@ -10,7 +10,7 @@
     "electron:dev": "concurrently -k \"vite\" \"cross-env ELECTRON_DEV=true electron electron/main.cjs\"",
     "electron:build": "vite build && electron-builder",
     "electron:preview": "vite build && electron electron/main.cjs",
-    "download-jre": "node scripts/download-jre.js",
+    "download-jre": "node scripts/download-jre.cjs",
     "start": "npm run electron:dev"
   },
   "dependencies": {

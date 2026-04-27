@@ -74,12 +74,28 @@
 
 - Node.js `>= 20.19.0` 或 `>= 22.12.0`
 - npm `>= 9.0.0`
+- Java 17（JRE）- Electron 打包模式需要
 
 ### 安装依赖
 
 ```bash
 npm install
 ```
+
+### 下载 JRE（Electron 打包模式）
+
+Electron 打包模式需要内置 JRE 17 运行后端服务。运行以下命令自动下载：
+
+```bash
+npm run download-jre
+```
+
+> 下载源为清华大学镜像，国内速度较快。JRE 约 126MB。
+
+**手动下载**（如果自动下载失败）：
+1. 从 [清华镜像](https://mirrors.tuna.tsinghua.edu.cn/Adoptium/17/jre/x64/windows/) 下载 JRE 17
+2. 解压后将文件夹重命名为 `jre`
+3. 放到 `electron/resources/jre/` 目录
 
 ### 开发模式
 
