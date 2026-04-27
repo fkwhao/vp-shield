@@ -282,50 +282,125 @@ watch(() => props.visible, (newVal) => {
 
 .soft-input {
   width: 140px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
   border: 1px solid var(--line-soft);
   background: var(--bg-surface-strong);
   color: var(--text-primary);
   font-size: 13px;
   text-align: right;
+  transition: all 0.2s ease;
+  -moz-appearance: textfield;
+}
+
+.soft-input::-webkit-outer-spin-button,
+.soft-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+  opacity: 1;
+  width: 18px;
+  height: 100%;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.soft-input::-webkit-inner-spin-button::before,
+.soft-input::-webkit-inner-spin-button::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+}
+
+.soft-input::-webkit-inner-spin-button::before {
+  top: 4px;
+  border-bottom: 5px solid var(--text-tertiary);
+}
+
+.soft-input::-webkit-inner-spin-button::after {
+  bottom: 4px;
+  border-top: 5px solid var(--text-tertiary);
+}
+
+.soft-input:hover {
+  border-color: var(--line-strong);
+}
+
+.soft-input:hover::-webkit-inner-spin-button::before {
+  border-bottom-color: var(--brand);
+}
+
+.soft-input:hover::-webkit-inner-spin-button::after {
+  border-top-color: var(--brand);
 }
 
 .soft-input:focus {
   outline: none;
   border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.soft-input:focus::-webkit-inner-spin-button::before,
+.soft-input:focus::-webkit-inner-spin-button::after {
+  border-bottom-color: var(--brand);
+  border-top-color: var(--brand);
 }
 
 .soft-toggle {
-  width: 44px;
-  height: 24px;
+  width: 46px;
+  height: 26px;
   appearance: none;
   background: var(--bg-soft);
   border-radius: 999px;
   position: relative;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.25s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--line-soft);
 }
 
 .soft-toggle::before {
   content: '';
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--text-secondary);
-  transition: transform 0.2s, background 0.2s;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.25s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.soft-toggle:hover {
+  border-color: var(--line-strong);
+}
+
+.soft-toggle:hover::before {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .soft-toggle:checked {
   background: var(--brand);
+  border-color: transparent;
 }
 
 .soft-toggle:checked::before {
   transform: translateX(20px);
   background: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.soft-toggle:checked:hover {
+  background: #0062c5;
+}
+
+:root[data-theme='dark'] .soft-toggle:checked:hover {
+  background: #4b93f4;
 }
 
 .modal-footer {

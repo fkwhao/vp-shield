@@ -243,13 +243,92 @@ body {
 }
 
 .soft-select {
-  padding: 10px 12px;
+  padding: 10px 36px 10px 12px;
   font-size: 13px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+:root[data-theme='dark'] .soft-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a8b3c7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.soft-select:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.soft-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.soft-select option {
+  padding: 8px 12px;
+  background: var(--bg-surface-strong);
+  color: var(--text-primary);
 }
 
 .soft-input {
   padding: 10px 12px;
   font-size: 13px;
+}
+
+/* Number input spinner styling */
+.soft-input[type="number"] {
+  -moz-appearance: textfield;
+  padding-right: 8px;
+}
+
+.soft-input[type="number"]::-webkit-outer-spin-button,
+.soft-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+  opacity: 1;
+  width: 20px;
+  height: 100%;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.soft-input[type="number"]::-webkit-inner-spin-button::before,
+.soft-input[type="number"]::-webkit-inner-spin-button::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+}
+
+.soft-input[type="number"]::-webkit-inner-spin-button::before {
+  top: 6px;
+  border-bottom: 5px solid var(--text-secondary);
+}
+
+.soft-input[type="number"]::-webkit-inner-spin-button::after {
+  bottom: 6px;
+  border-top: 5px solid var(--text-secondary);
+}
+
+.soft-input[type="number"]:hover::-webkit-inner-spin-button::before {
+  border-bottom-color: var(--brand);
+}
+
+.soft-input[type="number"]:hover::-webkit-inner-spin-button::after {
+  border-top-color: var(--brand);
+}
+
+.soft-input[type="number"]:focus::-webkit-inner-spin-button::before,
+.soft-input[type="number"]:focus::-webkit-inner-spin-button::after {
+  border-bottom-color: var(--brand);
+  border-top-color: var(--brand);
 }
 
 .soft-range {
