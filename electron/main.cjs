@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
-const { spawn } = require('child_process')
+const { spawn, execSync } = require('child_process')
 const fs = require('fs')
 
 let mainWindow = null
@@ -19,66 +19,79 @@ function getBackendJarPath() {
   return path.join(process.resourcesPath, 'resources', BACKEND_JAR_NAME)
 }
 
-const JAVA_PATH = findJava17()
+function getJrePath() {
+  // 内置 JRE 路径
+  if (isDev) {
+    return path.join(__dirname, 'resources', 'jre')
+  }
+  return path.join(process.resourcesPath, 'resources', 'jre')
+}
 
-function findJava17() {
-  const { execSync } = require('child_process')
+function getJavaExecutable() {
+  const jrePath = getJrePath()
 
+  // 优先使用内置 JRE
+  if (fs.existsSync(jrePath)) {
+    if (process.platform === 'win32') {
+      const javaExe = path.join(jrePath, 'bin', 'java.exe')
+      if (fs.existsSync(javaExe)) {
+        console.log(`Using bundled JRE: ${javaExe}`)
+        return javaExe
+      }
+    } else {
+      const javaExe = path.join(jrePath, 'bin', 'java')
+      if (fs.existsSync(javaExe)) {
+        console.log(`Using bundled JRE: ${javaExe}`)
+        return javaExe
+      }
+    }
+  }
+
+  // 回退到系统 Java
+  return findSystemJava17()
+}
+
+function findSystemJava17() {
   // 尝试常见的 Java 17 路径
   const possiblePaths = []
 
   if (process.platform === 'win32') {
-    // Windows: 检查常见安装位置
     possiblePaths.push(
-      'java', // 先尝试系统 PATH
+      'java',
       'C:\\Program Files\\Java\\jdk-17\\bin\\java.exe',
-      'C:\\Program Files\\Java\\jdk-17.0.2\\bin\\java.exe',
-      'C:\\Program Files\\Java\\jdk-17.0.3\\bin\\java.exe',
-      'C:\\Program Files\\Java\\jdk-17.0.4\\bin\\java.exe',
-      'C:\\Program Files\\Java\\jdk-17.0.5\\bin\\java.exe',
-      'C:\\Program Files\\Java\\jdk-17.0.6\\bin\\java.exe',
-      'C:\\Program Files\\Java\\jdk-17.0.7\\bin\\java.exe',
-      'C:\\Program Files\\Java\\jdk-17.0.8\\bin\\java.exe',
-      'C:\\Program Files\\Java\\jdk-17.0.9\\bin\\java.exe',
-      'C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.7-hotspot\\bin\\java.exe',
-      'C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.8-hotspot\\bin\\java.exe',
-      'C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.9-hotspot\\bin\\java.exe',
+      'C:\\Program Files\\Eclipse Adoptium\\jdk-17-hotspot\\bin\\java.exe',
       'C:\\Program Files\\Microsoft\\jdk-17\\bin\\java.exe',
     )
   } else if (process.platform === 'darwin') {
-    // macOS
     possiblePaths.push(
       'java',
       '/usr/local/opt/openjdk@17/bin/java',
       '/opt/homebrew/opt/openjdk@17/bin/java',
-      '/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java',
     )
   } else {
-    // Linux
     possiblePaths.push(
       'java',
       '/usr/lib/jvm/java-17-openjdk/bin/java',
-      '/usr/lib/jvm/java-17-openjdk-amd64/bin/java',
-      '/usr/lib/jvm/jdk-17/bin/java',
     )
   }
 
   for (const javaPath of possiblePaths) {
     try {
       const output = execSync(`"${javaPath}" -version 2>&1`, { encoding: 'utf8', timeout: 5000 })
-      if (output.includes('version "17') || output.includes('version "17.') || output.includes('version 17')) {
-        console.log(`Found Java 17 at: ${javaPath}`)
+      if (output.includes('version "17') || output.includes('version "1') && parseInt(output.match(/version "(\d+)/)?.[1]) >= 17) {
+        console.log(`Found system Java 17 at: ${javaPath}`)
         return javaPath
       }
     } catch (e) {
-      // 忽略错误，继续尝试下一个路径
+      // 继续尝试下一个路径
     }
   }
 
-  // 如果没找到 Java 17，返回默认 'java'，让用户知道需要安装
-  console.warn('Java 17 not found, using default java. Backend may fail if Java < 17.')
+  console.warn('Java 17 not found, using default java.')
   return 'java'
 }
+
+const JAVA_PATH = getJavaExecutable()
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -127,45 +140,52 @@ function startBackend() {
       return
     }
 
-    // Check Java version before starting
-    const { execSync } = require('child_process')
-    try {
-      const versionOutput = execSync(`"${JAVA_PATH}" -version 2>&1`, { encoding: 'utf8', timeout: 5000 })
-      console.log(`Java version check: ${versionOutput.split('\n')[0]}`)
-
-      // Check if Java 17+
-      if (!versionOutput.includes('version "17') && !versionOutput.includes('version "18') && !versionOutput.includes('version "19') && !versionOutput.includes('version "20') && !versionOutput.includes('version "21')) {
-        const errorMsg = '需要 Java 17 或更高版本。当前 Java 版本过低，请安装 JDK 17+。'
-        console.error(errorMsg)
-        resolve({ success: false, message: errorMsg })
-        return
-      }
-    } catch (e) {
-      console.warn('Could not verify Java version:', e.message)
+    // Check if Java exists
+    if (!fs.existsSync(JAVA_PATH) && JAVA_PATH === 'java') {
+      const jrePath = getJrePath()
+      resolve({
+        success: false,
+        message: `未找到 Java 运行环境。请运行以下命令下载 JRE:\nnpm run download-jre`
+      })
+      return
     }
 
     try {
-      backendProcess = spawn(JAVA_PATH, ['-jar', jarPath], {
+      // 添加 UTF-8 编码参数，解决 Windows 中文乱码问题
+      backendProcess = spawn(JAVA_PATH, [
+        '-Dfile.encoding=UTF-8',
+        '-Dconsole.encoding=UTF-8',
+        '-jar', jarPath
+      ], {
         cwd: path.dirname(jarPath),
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, JAVA_TOOL_OPTIONS: '-Dfile.encoding=UTF-8' }
       })
 
       backendProcess.stdout.on('data', (data) => {
-        console.log(`[Backend] ${data.toString()}`)
+        const output = data.toString('utf8')
+        // 只在开发模式下输出到控制台
+        if (isDev) {
+          console.log(`[Backend] ${output}`)
+        }
         if (mainWindow) {
           mainWindow.webContents.send('backend-log', {
             type: 'stdout',
-            data: data.toString()
+            data: output
           })
         }
       })
 
       backendProcess.stderr.on('data', (data) => {
-        console.error(`[Backend Error] ${data.toString()}`)
+        const output = data.toString('utf8')
+        // 只在开发模式下输出到控制台
+        if (isDev) {
+          console.error(`[Backend Error] ${output}`)
+        }
         if (mainWindow) {
           mainWindow.webContents.send('backend-log', {
             type: 'stderr',
-            data: data.toString()
+            data: output
           })
         }
       })

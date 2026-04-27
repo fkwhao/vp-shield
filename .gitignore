@@ -37,3 +37,9 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+# Electron build output
+release/
+
+# JRE (download separately)
+electron/resources/jre/

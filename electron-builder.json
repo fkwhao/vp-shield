@@ -1,13 +1,20 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/electron-builder/scheme.json",
   "appId": "com.vpshield.defense",
-  "productName": "VP-Shield Defense System",
+  "productName": "VP-Shield",
   "directories": {
     "output": "release"
   },
   "files": [
     "dist/**/*",
     "electron/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "electron/resources",
+      "to": "resources",
+      "filter": ["**/*.jar", "**/jre/**/*"]
+    }
   ],
   "win": {
     "target": [
@@ -16,20 +23,22 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "public/icon.ico"
+    "icon": "public/favicon.ico",
+    "requestedExecutionLevel": "requireAdministrator"
   },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
-    "createStartMenuShortcut": true
+    "createStartMenuShortcut": true,
+    "shortcutName": "VP-Shield"
   },
   "mac": {
     "target": "dmg",
-    "icon": "public/icon.icns"
+    "icon": "public/favicon.ico"
   },
   "linux": {
     "target": "AppImage",
-    "icon": "public/icon.png"
+    "icon": "public/favicon.ico"
   }
 }

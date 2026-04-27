@@ -55,6 +55,12 @@
       @action="handleAlertAction"
     />
 
+    <SettingsModal
+      :visible="settingsVisible"
+      @close="settingsVisible = false"
+      @saved="handleSettingsSaved"
+    />
+
     <Transition name="attack-indicator">
       <div v-if="store.isUnderAttack" class="attack-indicator">
         <span class="dot"></span>
@@ -73,11 +79,13 @@ import Dashboard from './components/Dashboard.vue'
 import AttackControl from './components/AttackControl.vue'
 import SecurityLogs from './components/SecurityLogs.vue'
 import AlertModal from './components/AlertModal.vue'
+import SettingsModal from './components/SettingsModal.vue'
 
 const store = useShieldStore()
 
 const uptime = ref(0)
 const theme = ref(localStorage.getItem('vp-shield-theme') || 'light')
+const settingsVisible = ref(false)
 let uptimeInterval = null
 
 const WS_URL = 'ws://localhost:8080/ws/traffic'
@@ -169,10 +177,14 @@ const handleExportLogs = () => {
 }
 
 const handleOpenSettings = () => {
+  settingsVisible.value = true
+}
+
+const handleSettingsSaved = () => {
   store.addLog({
-    level: 'info',
+    level: 'success',
     source: 'SYSTEM',
-    message: '设置功能开发中...'
+    message: '配置已保存'
   })
 }
 
