@@ -13,15 +13,24 @@
               <div class="section-title">抓包配置</div>
               <div class="config-grid">
                 <label class="config-item">
-                  <span class="label">混杂模式</span>
+                  <div class="label-with-tip">
+                    <span class="label">混杂模式</span>
+                    <span class="inline-tip">捕获所有经过网卡的数据包，包括非本机流量</span>
+                  </div>
                   <input type="checkbox" v-model="config.capture.promiscuous" class="soft-toggle" />
                 </label>
                 <label class="config-item">
-                  <span class="label">缓冲区大小 (字节)</span>
+                  <div class="label-with-tip">
+                    <span class="label">缓冲区大小 (字节)</span>
+                    <span class="inline-tip">建议 65536，过小可能丢包，过大占用内存</span>
+                  </div>
                   <input type="number" v-model.number="config.capture.bufferSize" class="soft-input" min="1024" max="1048576" />
                 </label>
                 <label class="config-item">
-                  <span class="label">读取超时 (毫秒)</span>
+                  <div class="label-with-tip">
+                    <span class="label">读取超时 (毫秒)</span>
+                    <span class="inline-tip">建议 100，过大会增加延迟</span>
+                  </div>
                   <input type="number" v-model.number="config.capture.readTimeout" class="soft-input" min="10" max="10000" />
                 </label>
               </div>
@@ -31,31 +40,52 @@
               <div class="section-title">防御配置</div>
               <div class="config-grid">
                 <label class="config-item">
-                  <span class="label">ICMP 阈值 (包/秒)</span>
+                  <div class="label-with-tip">
+                    <span class="label">ICMP 阈值 (包/秒)</span>
+                    <span class="inline-tip">ICMP Reply 超过此值触发告警，建议 100</span>
+                  </div>
                   <input type="number" v-model.number="config.defense.icmpReplyThreshold" class="soft-input" min="1" max="100000" />
                 </label>
                 <label class="config-item">
-                  <span class="label">TCP SYN 阈值 (包/秒)</span>
+                  <div class="label-with-tip">
+                    <span class="label">TCP SYN 阈值 (包/秒)</span>
+                    <span class="inline-tip">SYN 包超过此值触发 SYN Flood 告警，建议 1000</span>
+                  </div>
                   <input type="number" v-model.number="config.defense.tcpSynThreshold" class="soft-input" min="1" max="100000" />
                 </label>
                 <label class="config-item">
-                  <span class="label">UDP 阈值 (包/秒)</span>
+                  <div class="label-with-tip">
+                    <span class="label">UDP 阈值 (包/秒)</span>
+                    <span class="inline-tip">UDP 包超过此值触发 UDP Flood 告警，建议 5000</span>
+                  </div>
                   <input type="number" v-model.number="config.defense.udpThreshold" class="soft-input" min="1" max="100000" />
                 </label>
                 <label class="config-item">
-                  <span class="label">自动封禁</span>
+                  <div class="label-with-tip">
+                    <span class="label">自动封禁</span>
+                    <span class="inline-tip">检测到攻击时自动封禁攻击源 IP</span>
+                  </div>
                   <input type="checkbox" v-model="config.defense.autoBlock" class="soft-toggle" />
                 </label>
                 <label class="config-item">
-                  <span class="label">封禁时长 (分钟)</span>
+                  <div class="label-with-tip">
+                    <span class="label">封禁时长 (分钟)</span>
+                    <span class="inline-tip">IP 封禁持续时间，0 表示永久封禁</span>
+                  </div>
                   <input type="number" v-model.number="config.defense.blockDurationMinutes" class="soft-input" min="0" max="10080" />
                 </label>
                 <label class="config-item">
-                  <span class="label">流量限速</span>
+                  <div class="label-with-tip">
+                    <span class="label">流量限速</span>
+                    <span class="inline-tip">对伪造 IP 攻击启用限速策略</span>
+                  </div>
                   <input type="checkbox" v-model="config.defense.rateLimit" class="soft-toggle" />
                 </label>
                 <label class="config-item">
-                  <span class="label">限速恢复时间 (秒)</span>
+                  <div class="label-with-tip">
+                    <span class="label">限速恢复时间 (秒)</span>
+                    <span class="inline-tip">攻击停止后自动恢复正常流量</span>
+                  </div>
                   <input type="number" v-model.number="config.defense.rateLimitRecoverySeconds" class="soft-input" min="10" max="3600" />
                 </label>
               </div>
@@ -75,34 +105,37 @@
                   <span>当检测到大量不同源IP攻击或极高流量时，自动切换过滤器阻断攻击流量</span>
                 </div>
                 <label class="config-item">
-                  <span class="label">启用紧急防御</span>
+                  <div class="label-with-tip">
+                    <span class="label">启用紧急防御</span>
+                    <span class="inline-tip">开启后自动检测大规模 DDoS 攻击</span>
+                  </div>
                   <input type="checkbox" v-model="config.defense.emergencyDefense" class="soft-toggle" />
                 </label>
                 <label class="config-item">
                   <div class="label-with-tip">
                     <span class="label">源IP数量阈值</span>
-                    <span class="inline-tip">超过此数量的不同源IP将触发紧急防御</span>
+                    <span class="inline-tip">不同源IP超过此数量触发，个人建议20，企业建议50-100</span>
                   </div>
                   <input type="number" v-model.number="config.defense.emergencySourceIpThreshold" class="soft-input" min="5" max="500" />
                 </label>
                 <label class="config-item">
                   <div class="label-with-tip">
                     <span class="label">PPS 阈值</span>
-                    <span class="inline-tip">超过此PPS将触发紧急防御</span>
+                    <span class="inline-tip">每秒包数超过此值触发，建议 10000-50000</span>
                   </div>
                   <input type="number" v-model.number="config.defense.emergencyPpsThreshold" class="soft-input" min="1000" max="500000" />
                 </label>
                 <label class="config-item">
                   <div class="label-with-tip">
                     <span class="label">自动恢复时间 (秒)</span>
-                    <span class="inline-tip">紧急防御后自动恢复的时间，0表示不自动恢复</span>
+                    <span class="inline-tip">紧急防御后等待此时间自动恢复，0 表示不自动恢复</span>
                   </div>
                   <input type="number" v-model.number="config.defense.emergencyRecoverySeconds" class="soft-input" min="0" max="600" />
                 </label>
                 <label class="config-item">
                   <div class="label-with-tip">
                     <span class="label">停止抓包</span>
-                    <span class="inline-tip">紧急防御时完全停止接收流量（极端情况）</span>
+                    <span class="inline-tip">紧急防御时完全停止接收流量（仅极端情况使用）</span>
                   </div>
                   <input type="checkbox" v-model="config.defense.emergencyStopCapture" class="soft-toggle" />
                 </label>
@@ -113,11 +146,17 @@
               <div class="section-title">攻击模拟配置</div>
               <div class="config-grid">
                 <label class="config-item">
-                  <span class="label">默认包数量</span>
+                  <div class="label-with-tip">
+                    <span class="label">默认包数量</span>
+                    <span class="inline-tip">每次模拟攻击发送的数据包数量</span>
+                  </div>
                   <input type="number" v-model.number="config.attack.defaultPacketCount" class="soft-input" min="1" max="10000" />
                 </label>
                 <label class="config-item">
-                  <span class="label">发送间隔 (毫秒)</span>
+                  <div class="label-with-tip">
+                    <span class="label">发送间隔 (毫秒)</span>
+                    <span class="inline-tip">数据包发送间隔，越小攻击越密集</span>
+                  </div>
                   <input type="number" v-model.number="config.attack.packetIntervalMs" class="soft-input" min="1" max="1000" />
                 </label>
               </div>
