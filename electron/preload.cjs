@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startBackend: () => ipcRenderer.invoke('start-backend'),
   stopBackend: () => ipcRenderer.invoke('stop-backend'),
   getBackendStatus: () => ipcRenderer.invoke('get-backend-status'),
+  checkNpcap: () => ipcRenderer.invoke('check-npcap'),
 
   // Backend event listeners
   onBackendLog: (callback) => {

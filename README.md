@@ -75,6 +75,9 @@
 - Node.js `>= 20.19.0` 或 `>= 22.12.0`
 - npm `>= 9.0.0`
 - Java 17（JRE）- Electron 打包模式需要
+- **Npcap** - 网络抓包依赖，[下载地址](https://npcap.com/#download)
+
+> ⚠️ **重要**：使用打包好的 exe 前，必须先安装 Npcap，否则网络抓包功能无法使用。安装时勾选 "Install Npcap in WinPcap API-compatible Mode"。
 
 ### 安装依赖
 

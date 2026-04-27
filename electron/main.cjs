@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
 const path = require('path')
 const { spawn, execSync } = require('child_process')
 const fs = require('fs')
@@ -11,6 +11,17 @@ let backendProcess = null
 // 生产模式: app/resources/vp-shield.jar
 const isDev = process.env.ELECTRON_DEV === 'true' || !app.isPackaged
 const BACKEND_JAR_NAME = 'vp-shield.jar'
+
+// 检测 Npcap 是否已安装
+function checkNpcapInstalled() {
+  if (process.platform !== 'win32') return true
+
+  // 检查 Npcap 或 WinPcap 是否安装
+  const npcapPath = 'C:\\Windows\\System32\\Npcap'
+  const winpcapPath = 'C:\\Windows\\System32\\wpcap.dll'
+
+  return fs.existsSync(npcapPath) || fs.existsSync(winpcapPath)
+}
 
 function getBackendJarPath() {
   if (isDev) {
@@ -132,6 +143,29 @@ function startBackend() {
       return
     }
 
+    // 检查 Npcap 是否安装
+    if (!checkNpcapInstalled()) {
+      const result = dialog.showMessageBoxSync(mainWindow, {
+        type: 'error',
+        title: '缺少 Npcap',
+        message: '未检测到 Npcap，网络抓包功能无法使用。',
+        detail: '请下载并安装 Npcap 后重试。\n\n下载地址: https://npcap.com',
+        buttons: ['下载 Npcap', '取消'],
+        defaultId: 0,
+        cancelId: 1
+      })
+
+      if (result === 0) {
+        shell.openExternal('https://npcap.com/#download')
+      }
+
+      resolve({
+        success: false,
+        message: 'Npcap not installed. Please install from https://npcap.com'
+      })
+      return
+    }
+
     const jarPath = getBackendJarPath()
 
     // Check if JAR exists
@@ -244,6 +278,10 @@ ipcMain.handle('stop-backend', async () => {
 
 ipcMain.handle('get-backend-status', () => {
   return { running: backendProcess !== null }
+})
+
+ipcMain.handle('check-npcap', () => {
+  return { installed: checkNpcapInstalled() }
 })
 
 // Window controls

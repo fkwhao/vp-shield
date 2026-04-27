@@ -24,7 +24,8 @@
       }
     ],
     "icon": "public/favicon.ico",
-    "requestedExecutionLevel": "requireAdministrator"
+    "requestedExecutionLevel": "requireAdministrator",
+    "sign": null
   },
   "nsis": {
     "oneClick": false,
