@@ -6,12 +6,79 @@ const fs = require('fs')
 let mainWindow = null
 let backendProcess = null
 
-// Backend JAR path - adjust this to your actual JAR location
-const BACKEND_JAR_PATH = path.join(__dirname, '../../VP-Shield_Backend/vp-shield_backend/target/vp-shield-backend.jar')
-const JAVA_PATH = 'java' // or full path to java executable
-
-// Check if running in development mode
+// Backend JAR path - 将 JAR 包放在 resources 目录下
+// 开发模式: electron/resources/vp-shield.jar
+// 生产模式: app/resources/vp-shield.jar
 const isDev = process.env.ELECTRON_DEV === 'true' || !app.isPackaged
+const BACKEND_JAR_NAME = 'vp-shield.jar'
+
+function getBackendJarPath() {
+  if (isDev) {
+    return path.join(__dirname, 'resources', BACKEND_JAR_NAME)
+  }
+  return path.join(process.resourcesPath, 'resources', BACKEND_JAR_NAME)
+}
+
+const JAVA_PATH = findJava17()
+
+function findJava17() {
+  const { execSync } = require('child_process')
+
+  // 尝试常见的 Java 17 路径
+  const possiblePaths = []
+
+  if (process.platform === 'win32') {
+    // Windows: 检查常见安装位置
+    possiblePaths.push(
+      'java', // 先尝试系统 PATH
+      'C:\\Program Files\\Java\\jdk-17\\bin\\java.exe',
+      'C:\\Program Files\\Java\\jdk-17.0.2\\bin\\java.exe',
+      'C:\\Program Files\\Java\\jdk-17.0.3\\bin\\java.exe',
+      'C:\\Program Files\\Java\\jdk-17.0.4\\bin\\java.exe',
+      'C:\\Program Files\\Java\\jdk-17.0.5\\bin\\java.exe',
+      'C:\\Program Files\\Java\\jdk-17.0.6\\bin\\java.exe',
+      'C:\\Program Files\\Java\\jdk-17.0.7\\bin\\java.exe',
+      'C:\\Program Files\\Java\\jdk-17.0.8\\bin\\java.exe',
+      'C:\\Program Files\\Java\\jdk-17.0.9\\bin\\java.exe',
+      'C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.7-hotspot\\bin\\java.exe',
+      'C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.8-hotspot\\bin\\java.exe',
+      'C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.9-hotspot\\bin\\java.exe',
+      'C:\\Program Files\\Microsoft\\jdk-17\\bin\\java.exe',
+    )
+  } else if (process.platform === 'darwin') {
+    // macOS
+    possiblePaths.push(
+      'java',
+      '/usr/local/opt/openjdk@17/bin/java',
+      '/opt/homebrew/opt/openjdk@17/bin/java',
+      '/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home/bin/java',
+    )
+  } else {
+    // Linux
+    possiblePaths.push(
+      'java',
+      '/usr/lib/jvm/java-17-openjdk/bin/java',
+      '/usr/lib/jvm/java-17-openjdk-amd64/bin/java',
+      '/usr/lib/jvm/jdk-17/bin/java',
+    )
+  }
+
+  for (const javaPath of possiblePaths) {
+    try {
+      const output = execSync(`"${javaPath}" -version 2>&1`, { encoding: 'utf8', timeout: 5000 })
+      if (output.includes('version "17') || output.includes('version "17.') || output.includes('version 17')) {
+        console.log(`Found Java 17 at: ${javaPath}`)
+        return javaPath
+      }
+    } catch (e) {
+      // 忽略错误，继续尝试下一个路径
+    }
+  }
+
+  // 如果没找到 Java 17，返回默认 'java'，让用户知道需要安装
+  console.warn('Java 17 not found, using default java. Backend may fail if Java < 17.')
+  return 'java'
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -52,15 +119,34 @@ function startBackend() {
       return
     }
 
+    const jarPath = getBackendJarPath()
+
     // Check if JAR exists
-    if (!fs.existsSync(BACKEND_JAR_PATH)) {
-      resolve({ success: false, message: 'Backend JAR not found. Please build the backend first.' })
+    if (!fs.existsSync(jarPath)) {
+      resolve({ success: false, message: `JAR not found: ${jarPath}` })
       return
     }
 
+    // Check Java version before starting
+    const { execSync } = require('child_process')
     try {
-      backendProcess = spawn(JAVA_PATH, ['-jar', BACKEND_JAR_PATH], {
-        cwd: path.dirname(BACKEND_JAR_PATH),
+      const versionOutput = execSync(`"${JAVA_PATH}" -version 2>&1`, { encoding: 'utf8', timeout: 5000 })
+      console.log(`Java version check: ${versionOutput.split('\n')[0]}`)
+
+      // Check if Java 17+
+      if (!versionOutput.includes('version "17') && !versionOutput.includes('version "18') && !versionOutput.includes('version "19') && !versionOutput.includes('version "20') && !versionOutput.includes('version "21')) {
+        const errorMsg = '需要 Java 17 或更高版本。当前 Java 版本过低，请安装 JDK 17+。'
+        console.error(errorMsg)
+        resolve({ success: false, message: errorMsg })
+        return
+      }
+    } catch (e) {
+      console.warn('Could not verify Java version:', e.message)
+    }
+
+    try {
+      backendProcess = spawn(JAVA_PATH, ['-jar', jarPath], {
+        cwd: path.dirname(jarPath),
         stdio: ['ignore', 'pipe', 'pipe']
       })
 
