@@ -9,7 +9,7 @@ const publicDir = join(__dirname, '..', 'public')
 
 async function generateIcons() {
   // 使用 PNG 源文件生成图标
-  const sourcePng = join(publicDir, 'img_1.png')
+  const sourcePng = join(publicDir, '图层 1.png')
   const pngBuffer = readFileSync(sourcePng)
 
   // Generate 256x256 PNG
